@@ -21,26 +21,30 @@ func (s *schematic) init() error {
 	s.w, s.h, s.l = int(s.Data["Width"].(int16)), int(s.Data["Height"].(int16)), int(s.Data["Length"].(int16))
 	s.blocks = make([]uint16, s.w*s.h*s.l)
 
-	paletteV, dataV := reflect.ValueOf(s.Data["Palette"]), reflect.ValueOf(s.Data["BlockData"])
-	paletteSlice, dataSlice := reflect.MakeSlice(reflect.SliceOf(paletteV.Type().Elem()), paletteV.Len(), paletteV.Len()),
-		reflect.MakeSlice(reflect.SliceOf(dataV.Type().Elem()), dataV.Len(), dataV.Len())
-
-	reflect.Copy(paletteSlice, paletteV)
+	dataV := reflect.ValueOf(s.Data["BlockData"])
+	dataSlice := reflect.MakeSlice(reflect.SliceOf(dataV.Type().Elem()), dataV.Len(), dataV.Len())
 	reflect.Copy(dataSlice, dataV)
 
-	s.palette = paletteSlice.Interface().([]string)
+	paletteMap := s.Data["Palette"].(map[string]interface{})
+	s.palette = make([]string, len(paletteMap))
+	for state, ind := range paletteMap {
+		s.palette[ind.(int32)] = state
+	}
 
 	data := dataSlice.Interface().([]byte)
-	index, i := 0, 0
+	index, i, value, varIntLen := 0, 0, 0, 0
 	for i < len(data) {
-		value, varIntLen := 0, 0
-		for true {
+		value, varIntLen = 0, 0
+		for {
+			dat := int(data[i])
+			value |= (dat & 127) << (varIntLen * 7)
+
 			varIntLen++
-			value |= (data[i] & 127) << (varIntLen * 7)
 			if varIntLen > 5 {
 				return fmt.Errorf("varint too long")
 			}
-			if (data[i] & 128) != 128 {
+
+			if (dat & 128) != 128 {
 				i++
 				break
 			}

@@ -1,4 +1,4 @@
-module schem
+module github.com/justtaldevelops/schem
 
 go 1.17
 

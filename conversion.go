@@ -21,6 +21,7 @@ var (
 	editionConversion = make(map[string]bedrockState)
 )
 
+// init initializes the editionConversion map.
 func init() {
 	parsedData := gjson.ParseBytes(mappingsData)
 	parsedData.ForEach(func(key, value gjson.Result) bool {
